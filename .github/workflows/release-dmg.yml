@@ -1,0 +1,59 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build app
+        run: |
+          xcodebuild \
+            -project SkillsMate.xcodeproj \
+            -scheme SkillsMateApp \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Create DMG
+        run: |
+          set -euo pipefail
+
+          APP_PATH="$(ls -d build/Build/Products/Release/*.app | head -n 1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "App not found in build/Build/Products/Release"
+            exit 1
+          fi
+
+          APP_NAME="$(basename "$APP_PATH" .app)"
+          TAG="${GITHUB_REF_NAME}"
+          DMG_NAME="${APP_NAME}-${TAG}.dmg"
+          STAGING_DIR="dmg-staging"
+
+          rm -rf "$STAGING_DIR"
+          mkdir -p "$STAGING_DIR"
+          cp -R "$APP_PATH" "$STAGING_DIR/"
+
+          hdiutil create \
+            -volname "$APP_NAME" \
+            -srcfolder "$STAGING_DIR" \
+            -ov \
+            -format UDZO \
+            "$DMG_NAME"
+
+          echo "DMG_PATH=$DMG_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.DMG_PATH }}
