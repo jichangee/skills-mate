@@ -5,6 +5,7 @@ struct MarketplaceView: View {
     @State private var customURLText = ""
     @State private var selectedGitHubSkillIDs: Set<String> = []
     @State private var showError = false
+    @State private var showSuccess = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -20,12 +21,22 @@ struct MarketplaceView: View {
         .onReceive(store.$lastErrorMessage) { message in
             showError = message != nil
         }
+        .onReceive(store.$lastSuccessMessage) { message in
+            showSuccess = message != nil
+        }
         .alert("发生错误", isPresented: $showError) {
             Button("知道了") {
                 store.lastErrorMessage = nil
             }
         } message: {
             Text(store.lastErrorMessage ?? "")
+        }
+        .alert("操作成功", isPresented: $showSuccess) {
+            Button("知道了") {
+                store.lastSuccessMessage = nil
+            }
+        } message: {
+            Text(store.lastSuccessMessage ?? "")
         }
     }
 
@@ -52,6 +63,7 @@ struct MarketplaceView: View {
                 TextField("https://github.com/owner/repo", text: $customURLText)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
+                    .autocorrectionDisabled(true)
                     .frame(minWidth: 360)
                 Button("解析") {
                     guard let url = URL(string: customURLText) else {

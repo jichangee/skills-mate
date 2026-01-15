@@ -10,6 +10,7 @@ final class SkillsStore: ObservableObject {
     @Published private(set) var isLoadingGitHub = false
     @Published var isRefreshing = false
     @Published var lastErrorMessage: String?
+    @Published var lastSuccessMessage: String?
 
     init() {
         refresh()
@@ -29,6 +30,18 @@ final class SkillsStore: ObservableObject {
 
     func openInFinder(_ skill: Skill) {
         NSWorkspace.shared.activateFileViewerSelecting([skill.folderURL])
+    }
+    
+    func delete(_ skill: Skill) {
+        Task {
+            do {
+                try moveToTrash(skill)
+                skills = try await loadSkills()
+                lastSuccessMessage = "技能 "\(skill.name)" 已成功删除"
+            } catch {
+                lastErrorMessage = "删除失败：\(error.localizedDescription)"
+            }
+        }
     }
 
     func toggle(skill: Skill) {
@@ -85,6 +98,8 @@ final class SkillsStore: ObservableObject {
                 }
                 try await installGitHubSkills(from: repo, ids: ids, to: location)
                 skills = try await loadSkills()
+                let count = ids.count
+                lastSuccessMessage = "成功安装 \(count) 个技能"
             } catch {
                 isLoadingGitHub = false
                 lastErrorMessage = "安装失败：\(error.localizedDescription)"
@@ -157,6 +172,10 @@ final class SkillsStore: ObservableObject {
             preferredName: skill.folderURL.lastPathComponent
         )
         try FileManager.default.moveItem(at: skill.folderURL, to: targetURL)
+    }
+    
+    private func moveToTrash(_ skill: Skill) throws {
+        try NSWorkspace.shared.recycle([skill.folderURL], completionHandler: nil)
     }
 
     private func ensureDirectoryExists(_ url: URL) throws {

@@ -3,6 +3,7 @@ import SwiftUI
 struct LocalSkillsView: View {
     @EnvironmentObject private var store: SkillsStore
     @State private var showError = false
+    @State private var showSuccess = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -14,12 +15,22 @@ struct LocalSkillsView: View {
         .onReceive(store.$lastErrorMessage) { message in
             showError = message != nil
         }
+        .onReceive(store.$lastSuccessMessage) { message in
+            showSuccess = message != nil
+        }
         .alert("发生错误", isPresented: $showError) {
             Button("知道了") {
                 store.lastErrorMessage = nil
             }
         } message: {
             Text(store.lastErrorMessage ?? "")
+        }
+        .alert("操作成功", isPresented: $showSuccess) {
+            Button("知道了") {
+                store.lastSuccessMessage = nil
+            }
+        } message: {
+            Text(store.lastSuccessMessage ?? "")
         }
     }
 
@@ -60,7 +71,7 @@ struct LocalSkillsView: View {
                 Text("操作")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .frame(width: 160, alignment: .leading)
+                    .frame(width: 220, alignment: .leading)
             }
             .padding(.vertical, 4)
 
@@ -92,9 +103,13 @@ struct LocalSkillsView: View {
                         Button("定位") {
                             store.openInFinder(skill)
                         }
+                        Button("删除") {
+                            store.delete(skill)
+                        }
+                        .foregroundColor(.red)
                     }
                     .buttonStyle(.bordered)
-                    .frame(width: 160, alignment: .leading)
+                    .frame(width: 220, alignment: .leading)
                 }
                 .padding(.vertical, 4)
             }
