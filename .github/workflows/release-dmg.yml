@@ -19,7 +19,7 @@ jobs:
         run: |
           xcodebuild \
             -project SkillsMate.xcodeproj \
-            -scheme SkillsMateApp \
+            -scheme SkillsMate \
             -configuration Release \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
