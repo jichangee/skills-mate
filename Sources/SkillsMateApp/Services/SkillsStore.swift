@@ -37,7 +37,7 @@ final class SkillsStore: ObservableObject {
             do {
                 try moveToTrash(skill)
                 skills = try await loadSkills()
-                lastSuccessMessage = "技能 "\(skill.name)" 已成功删除"
+                lastSuccessMessage = "技能 \"\(skill.name)\" 已成功删除"
             } catch {
                 lastErrorMessage = "删除失败：\(error.localizedDescription)"
             }
