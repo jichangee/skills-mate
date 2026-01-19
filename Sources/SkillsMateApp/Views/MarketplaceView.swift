@@ -147,35 +147,99 @@ struct MarketplaceView: View {
 
     private var marketplaceList: some View {
         List(store.marketplaceItems) { item in
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(item.name)
-                        .font(.headline)
-                    Spacer()
-                    Button("下载") {
-                        guard let url = item.downloadURL else {
-                            store.lastErrorMessage = "该条目暂无下载链接"
-                            return
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    if let avatarURL = item.authorAvatar, let url = URL(string: avatarURL) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray.opacity(0.2)
                         }
-                        store.installFromMarketplace(url: url, to: .claude)
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
                     }
-                    .buttonStyle(.borderedProminent)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(item.name)
+                                .font(.headline)
+                            Spacer()
+                            Button("安装") {
+                                if let githubUrl = item.githubUrl, let url = URL(string: githubUrl) {
+                                    store.loadGitHubSkills(from: url)
+                                } else if let downloadURL = item.downloadURL {
+                                    store.installFromMarketplace(url: downloadURL, to: .claude)
+                                } else {
+                                    store.lastErrorMessage = "该技能暂无安装方式"
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        HStack(spacing: 8) {
+                            Text(item.author)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            if let stars = item.stars {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "star.fill")
+                                        .font(.caption)
+                                    Text("\(formatNumber(stars))")
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(.secondary)
+                            }
+                            
+                            if let forks = item.forks {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "tuningfork")
+                                        .font(.caption)
+                                    Text("\(formatNumber(forks))")
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(.secondary)
+                            }
+                            
+                            if let githubUrl = item.githubUrl, let url = URL(string: githubUrl) {
+                                Link(destination: url) {
+                                    Image(systemName: "link")
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                    }
                 }
+                
                 Text(item.summary)
+                    .font(.body)
                     .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    Text("作者：\(item.author)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if !item.tags.isEmpty {
-                        Text(item.tags.joined(separator: " · "))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                
+                if !item.tags.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(item.tags, id: \.self) { tag in
+                            Text(tag)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.accentColor.opacity(0.1))
+                                .cornerRadius(4)
+                        }
                     }
                 }
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
         }
         .listStyle(.inset)
+    }
+    
+    private func formatNumber(_ number: Int) -> String {
+        if number >= 1000 {
+            return String(format: "%.1fk", Double(number) / 1000.0)
+        }
+        return "\(number)"
     }
 }
